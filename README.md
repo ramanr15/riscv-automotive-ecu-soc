@@ -16,7 +16,7 @@ hardware.
 | | |
 |---|---|
 | Clock | 80 MHz (post-route fmax ≈ 93 MHz) |
-| Timing | WNS **+0.309 ns**, 0 failing endpoints of 10 920 |
+| Timing | WNS **+0.233 ns**, 0 failing endpoints of 10 919 |
 | Utilisation | 3896 LUT (6%), 3425 FF, 4 DSP, 1 BRAM, 55 I/O |
 | Power | 0.149 W estimated |
 | Hardware | CAN loopback frame received and displayed on LEDs |
@@ -151,7 +151,7 @@ Step-by-step procedure in
 
 Three findings worth recording, since each shaped the design.
 
-### Timing closure: −80 ns to +0.309 ns
+### Timing closure: −80 ns to +0.233 ns
 
 Initial synthesis failed catastrophically. The critical path was 309
 logic levels, 293 of them CARRY4 — a 32-bit divider implemented
@@ -163,7 +163,7 @@ combinationally in a single cycle.
 | Sequential divider + split multiplier | −1.499 ns |
 | Operand capture stage before the DSPs | −1.011 ns |
 | Post-route | −0.747 ns |
-| Retargeted to 80 MHz, post-route | **+0.309 ns** |
+| Retargeted to 80 MHz, post-route | **+0.233 ns** |
 
 `muldiv_unit` now uses restoring division (35 cycles) and a partial-
 product multiplier (4 cycles), with an EX-stall handshake added to the
@@ -171,6 +171,17 @@ pipeline. The remaining path — register file → forwarding mux → ALU →
 result mux — is inherent to a single-cycle execute stage on a −1 speed
 grade part. 80 MHz was chosen with margin rather than restructuring the
 CPU.
+
+Slack varies by a few hundred picoseconds between implementation runs.
+At 5% device utilisation the placer stops optimising as soon as
+constraints are met, so the default strategy occasionally lands
+slightly negative; `Performance_ExplorePostRoutePhysOpt` closes it
+reliably. The design has roughly 1.5 ns of genuine margin at 80 MHz —
+the reported figure is placement noise, not headroom.
+
+Timing is independent of which program is loaded: `program.mem` only
+initialises the instruction memory array and does not change the
+logic.
 
 ### CAN read-timing mismatch
 
